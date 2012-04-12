@@ -33,6 +33,7 @@
       moduleManager.register("email_chosen", modules.EmailChosen);
       moduleManager.register("xhr_delay", modules.XHRDelay);
       moduleManager.register("xhr_disable_form", modules.XHRDisableForm);
+      moduleManager.register("set_password", modules.SetPassword);
 
       moduleManager.start("xhr_delay");
       moduleManager.start("xhr_disable_form");
