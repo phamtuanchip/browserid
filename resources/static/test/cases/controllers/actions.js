@@ -10,7 +10,8 @@
       user = bid.User,
       controller,
       el,
-      testHelpers = bid.TestHelpers;
+      testHelpers = bid.TestHelpers,
+      TEST_EMAIL = "testuser@testuser.com";
 
   function createController(config) {
     controller = BrowserID.Modules.Actions.create();
@@ -59,7 +60,7 @@
       ready: function() {
         var error;
         try {
-          controller.doProvisionPrimaryUser({email: "testuser@testuser.com"});
+          controller.doProvisionPrimaryUser({email: TEST_EMAIL});
         } catch(e) {
           error = e;
         }
@@ -89,7 +90,7 @@
   asyncTest("doCannotVerifyRequiredPrimary - show the error screen", function() {
     createController({
       ready: function() {
-        controller.doCannotVerifyRequiredPrimary({ email: "testuser@testuser.com"});
+        controller.doCannotVerifyRequiredPrimary({ email: TEST_EMAIL});
 
         testHelpers.testErrorVisible();
         start();
@@ -119,7 +120,7 @@
       ready: function() {
         var error;
         try {
-          controller.doEmailChosen({email: "testuser@testuser.com"});
+          controller.doEmailChosen({email: TEST_EMAIL});
         } catch(e) {
           error = e;
         }
@@ -135,7 +136,7 @@
       ready: function() {
         var error;
         try {
-          controller.doConfirmUser({email: "testuser@testuser.com"});
+          controller.doConfirmUser({email: TEST_EMAIL});
         } catch(e) {
           error = e;
         }
@@ -151,7 +152,7 @@
       ready: function() {
         var error;
         try {
-          controller.doConfirmEmail({email: "testuser@testuser.com"});
+          controller.doConfirmEmail({email: TEST_EMAIL});
         } catch(e) {
           error = e;
         }
@@ -171,9 +172,44 @@
           start();
         });
 
-        user.syncEmailKeypair("testuser@testuser.com", function() {
-          controller.doEmailConfirmed({email: "testuser@testuser.com"});
+        user.syncEmailKeypair(TEST_EMAIL, function() {
+          controller.doEmailConfirmed({email: TEST_EMAIL});
         });
+      }
+    });
+  });
+
+  asyncTest("doStageUser with successful creation - trigger user_staged", function() {
+    createController({
+      ready: function() {
+        var email;
+        testHelpers.register("user_staged", function(msg, info) {
+          email = info.email;
+        });
+
+        controller.doStageUser({ email: TEST_EMAIL, password: "password", ready: function(status) {
+          equal(status, true, "correct status");
+          equal(email, TEST_EMAIL, "user successfully staged");
+          start();
+        }});
+      }
+    });
+  });
+
+  asyncTest("doForgotPassword - call the set_password controller with reset_password true", function() {
+    createController({
+      ready: function() {
+        var error;
+        // XXX using a try/catch to determine which module was started is
+        // shite. Use a fraking mock for this.
+        try {
+          controller.doForgotPassword({email: TEST_EMAIL});
+        } catch(e) {
+          error = e;
+        }
+
+        equal(error, "module not registered for set_password", "correct service started");
+        start();
       }
     });
   });

@@ -20,7 +20,13 @@ BrowserID.State = (function() {
 
   function startStateMachine() {
     var self = this,
-        handleState = self.subscribe.bind(self),
+        handleState = function(msg, callback) {
+          self.subscribe(msg, function(msg, info) {
+            // This level of indirection is to ensure an info object is
+            // always present in the handler.
+            callback(msg, info || {});
+          });
+        },
         redirectToState = mediator.publish.bind(mediator),
         startAction = function(save, msg, options) {
           if(typeof save !== "boolean") {
@@ -35,8 +41,6 @@ BrowserID.State = (function() {
         cancelState = self.popState.bind(self);
 
     handleState("start", function(msg, info) {
-      info = info || {};
-
       self.hostname = info.hostname;
       self.privacyURL = info.privacyURL;
       self.tosURL = info.tosURL;
@@ -87,7 +91,6 @@ BrowserID.State = (function() {
     });
 
     handleState("authenticate", function(msg, info) {
-      info = info || {};
       info.privacyURL = self.privacyURL;
       info.tosURL = self.tosURL;
       startAction("doAuthenticate", info);
@@ -95,14 +98,20 @@ BrowserID.State = (function() {
 
     handleState("new_user", function(msg, info) {
       self.newUserEmail = info.email;
-      startAction("doSetPassword", info);
+      startAction(false, "doSetPassword", info);
     });
 
     handleState("password_set", function(msg, info) {
-      info = info || {};
-      info.email = self.newUserEmail;
+      info = _.extend({ email: self.newUserEmail || self.resetPasswordEmail }, info);
 
-      startAction("doStageUser", info);
+      if(self.newUserEmail) {
+        self.newUserEmail = null;
+        startAction(false, "doStageUser", info);
+      }
+      else if(self.resetPasswordEmail) {
+        self.resetPasswordEmail = null;
+        startAction(false, "doResetPassword", info);
+      }
     });
 
     handleState("user_staged", function(msg, info) {
@@ -133,13 +142,12 @@ BrowserID.State = (function() {
     });
 
     handleState("primary_user_provisioned", function(msg, info) {
-      info = info || {};
       info.add = !!addPrimaryUser;
       startAction("doPrimaryUserProvisioned", info);
     });
 
     handleState("primary_user_unauthenticated", function(msg, info) {
-      info = helpers.extend(info || {}, {
+      info = helpers.extend(info, {
         add: !!addPrimaryUser,
         email: email,
         requiredEmail: !!requiredEmail,
@@ -187,8 +195,6 @@ BrowserID.State = (function() {
     });
 
     handleState("email_chosen", function(msg, info) {
-      info = info || {};
-
       var email = info.email,
           idInfo = storage.getEmail(email);
 
@@ -248,14 +254,19 @@ BrowserID.State = (function() {
     });
 
     handleState("forgot_password", function(msg, info) {
-      // forgot password initiates the forgotten password flow.
+      // User has forgotten their password, let them reset it.  The response
+      // message from the forgot_password controller will be a set_password.
+      // the set_password handler needs to know the forgotPassword email so it
+      // knows how to handle the password being set.  When the password is
+      // finally reset, the password_reset message will be raised where we must
+      // await email confirmation.
+      self.resetPasswordEmail = info.email;
       startAction(false, "doForgotPassword", info);
     });
 
-    handleState("reset_password", function(msg, info) {
-      // reset password says the password has been reset, now waiting for
-      // confirmation.
-      startAction(false, "doResetPassword", info);
+    handleState("password_reset", function(msg, info) {
+      // password has been reset, now waiting for confirmation.
+      redirectToState("user_staged", info);
     });
 
     handleState("assertion_generated", function(msg, info) {
@@ -291,7 +302,7 @@ BrowserID.State = (function() {
     });
 
     handleState("add_email", function(msg, info) {
-      info = helpers.extend(info || {}, {
+      info = helpers.extend(info, {
         privacyURL: self.privacyURL,
         tosURL: self.tosURL
       });
