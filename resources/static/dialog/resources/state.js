@@ -102,11 +102,15 @@ BrowserID.State = (function() {
     });
 
     handleState("password_set", function(msg, info) {
-      info = _.extend({ email: self.newUserEmail || self.resetPasswordEmail }, info);
+      info = _.extend({ email: self.newUserEmail || self.addEmailEmail || self.resetPasswordEmail }, info);
 
       if(self.newUserEmail) {
         self.newUserEmail = null;
         startAction(false, "doStageUser", info);
+      }
+      else if(self.addEmailEmail) {
+        self.addEmailEmail = null;
+        startAction(false, "doStageEmail", info);
       }
       else if(self.resetPasswordEmail) {
         self.resetPasswordEmail = null;
@@ -308,6 +312,11 @@ BrowserID.State = (function() {
       });
 
       startAction("doAddEmail", info);
+    });
+
+    handleState("add_email_requires_password", function(msg, info) {
+      self.addEmailEmail = info.email;
+      startAction(false, "doSetPassword", info);
     });
 
     handleState("email_staged", function(msg, info) {

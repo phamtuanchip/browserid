@@ -11,6 +11,7 @@
       transport = bid.Mocks.xhr,
       testHelpers = bid.TestHelpers,
       TEST_EMAIL = "testuser@testuser.com",
+      TEST_PASSWORD = "password",
       failureCheck = testHelpers.failureCheck;
 
   var network = BrowserID.Network;
@@ -166,7 +167,7 @@
 
 
   asyncTest("completeEmailRegistration valid", function() {
-    network.completeEmailRegistration("goodtoken", "password", function onSuccess(proven) {
+    network.completeEmailRegistration("goodtoken", function onSuccess(proven) {
       equal(proven, true, "good token proved");
       start();
     }, testHelpers.unexpectedXHRFailure);
@@ -174,14 +175,14 @@
 
   asyncTest("completeEmailRegistration with invalid token", function() {
     transport.useResult("invalid");
-    network.completeEmailRegistration("badtoken", "password", function onSuccess(proven) {
+    network.completeEmailRegistration("badtoken", function onSuccess(proven) {
       equal(proven, false, "bad token could not be proved");
       start();
     }, testHelpers.unexpectedXHRFailure);
   });
 
   asyncTest("completeEmailRegistration with XHR failure", function() {
-    failureCheck(network.completeEmailRegistration, "goodtoken", "password");
+    failureCheck(network.completeEmailRegistration, "goodtoken");
   });
 
   asyncTest("createUser with valid user", function() {
@@ -235,7 +236,7 @@
   });
 
   asyncTest("completeUserRegistration with valid token", function() {
-    network.completeUserRegistration("token", "password", function(registered) {
+    network.completeUserRegistration("token", function(registered) {
       ok(registered);
       start();
     }, testHelpers.unexpectedFailure);
@@ -244,14 +245,14 @@
   asyncTest("completeUserRegistration with invalid token", function() {
     transport.useResult("invalid");
 
-    network.completeUserRegistration("token", "password", function(registered) {
+    network.completeUserRegistration("token", function(registered) {
       equal(registered, false);
       start();
     }, testHelpers.unexpectedFailure);
   });
 
   asyncTest("completeUserRegistration with XHR failure", function() {
-    failureCheck(network.completeUserRegistration, "token", "password");
+    failureCheck(network.completeUserRegistration, "token");
   });
 
   asyncTest("cancelUser valid", function() {
@@ -297,7 +298,7 @@
 
 
   asyncTest("addSecondaryEmail valid", function() {
-    network.addSecondaryEmail("testuser@testuser.com", "origin", function onSuccess(added) {
+    network.addSecondaryEmail(TEST_EMAIL, TEST_PASSWORD, "origin", function onSuccess(added) {
       ok(added);
       start();
     }, testHelpers.unexpectedFailure);
@@ -305,7 +306,7 @@
 
   asyncTest("addSecondaryEmail invalid", function() {
     transport.useResult("invalid");
-    network.addSecondaryEmail("testuser@testuser.com", "origin", function onSuccess(added) {
+    network.addSecondaryEmail(TEST_EMAIL, TEST_PASSWORD, "origin", function onSuccess(added) {
       equal(added, false);
       start();
     }, testHelpers.unexpectedFailure);
@@ -314,14 +315,14 @@
   asyncTest("addSecondaryEmail throttled", function() {
     transport.useResult("throttle");
 
-    network.addSecondaryEmail("testuser@testuser.com", "origin", function onSuccess(added) {
+    network.addSecondaryEmail(TEST_EMAIL, TEST_PASSWORD, "origin", function onSuccess(added) {
       equal(added, false, "throttled email returns onSuccess but with false as the value");
       start();
     }, testHelpers.unexpectedFailure);
   });
 
   asyncTest("addSecondaryEmail with XHR failure", function() {
-    failureCheck(network.addSecondaryEmail, "testuser@testuser.com", "origin");
+    failureCheck(network.addSecondaryEmail, TEST_EMAIL, TEST_PASSWORD, "origin");
   });
 
   asyncTest("checkEmailRegistration pending", function() {
@@ -347,7 +348,7 @@
   });
 
   asyncTest("checkEmailRegistration with XHR failure", function() {
-    failureCheck(network.checkEmailRegistration, "testuser@testuser.com");
+    failureCheck(network.checkEmailRegistration, TEST_EMAIL);
   });
 
 
@@ -390,7 +391,7 @@
 
     network.emailForVerificationToken("token", function(result) {
       equal(result.needs_password, true, "needs_password correctly set to true");
-      equal(result.email, "testuser@testuser.com", "email address correctly added");
+      equal(result.email, TEST_EMAIL, "email address correctly added");
       start();
     }, testHelpers.unexpectedXHRFailure);
   });
@@ -398,7 +399,7 @@
   asyncTest("emailForVerificationToken that does not need password", function() {
     network.emailForVerificationToken("token", function(result) {
       equal(result.needs_password, false, "needs_password correctly set to false");
-      equal(result.email, "testuser@testuser.com", "email address correctly added");
+      equal(result.email, TEST_EMAIL, "email address correctly added");
       start();
     }, testHelpers.unexpectedXHRFailure);
   });
@@ -427,14 +428,14 @@
 
 
   asyncTest("requestPasswordReset - true status", function() {
-    network.requestPasswordReset("testuser@testuser.com", "password", "origin", function onSuccess(status) {
+    network.requestPasswordReset(TEST_EMAIL, "password", "origin", function onSuccess(status) {
       equal(status, true, "password reset request success");
       start();
     }, testHelpers.unexpectedFailure);
   });
 
   asyncTest("requestPasswordReset with XHR failure", function() {
-    failureCheck(network.requestPasswordReset, "testuser@testuser.com", "password", "origin");
+    failureCheck(network.requestPasswordReset, TEST_EMAIL, "password", "origin");
   });
 
   asyncTest("setPassword happy case expects true status", function() {
@@ -565,7 +566,7 @@
   });
 
   asyncTest("prolongSession with authenticated user, success - call complete", function() {
-    network.authenticate("testuser@testuser.com", "password", function() {
+    network.authenticate(TEST_EMAIL, "password", function() {
       network.prolongSession(function() {
         ok(true, "prolongSession completed");
         start();
