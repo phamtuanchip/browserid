@@ -1056,7 +1056,9 @@ BrowserID.User = (function() {
           sortedIdentities = [];
 
       for(var key in identities) {
-        sortedIdentities.push({ address: key, info: identities[key] });
+        if(identities.hasOwnProperty(key)) {
+          sortedIdentities.push({ address: key, info: identities[key] });
+        }
       }
 
       sortedIdentities.sort(function(a, b) {
