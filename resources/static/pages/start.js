@@ -45,7 +45,8 @@ $(function() {
     module.start({});
   }
   else if (path === "/signup") {
-    bid.signUp();
+    var module = bid.signUp.create();
+    module.start({});
   }
   else if (path === "/forgot") {
     bid.forgot();
